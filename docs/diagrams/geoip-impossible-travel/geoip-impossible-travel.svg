@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="360" viewBox="0 0 760 360" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L8 5L1 9" fill="none" stroke="#5b6b7a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <marker id="arAmber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L8 5L1 9" fill="none" stroke="#ffb000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  </defs>
+  <rect x="0" y="0" width="760" height="360" rx="10" fill="#0b0f14"/>
+  <text x="40" y="40" fill="#19c37d" font-size="18" font-weight="600">GeoIP — impossible-travel detection</text>
+  <text x="40" y="62" fill="#8b98a5" font-size="12">Two logins too far apart in too little time cannot be the same person.</text>
+  <rect x="40" y="100" width="250" height="72" rx="8" fill="#10171f" stroke="#2a3441"/>
+  <text x="165" y="128" fill="#e6edf3" font-size="14" font-weight="600" text-anchor="middle">Login A — Tokyo</text>
+  <text x="165" y="150" fill="#8b98a5" font-size="12" text-anchor="middle">14:00 · 35.68, 139.69</text>
+  <rect x="470" y="100" width="250" height="72" rx="8" fill="#10171f" stroke="#2a3441"/>
+  <text x="595" y="128" fill="#e6edf3" font-size="14" font-weight="600" text-anchor="middle">Login B — New York</text>
+  <text x="595" y="150" fill="#8b98a5" font-size="12" text-anchor="middle">14:06 · 40.71, -74.01</text>
+  <path d="M290 120 C360 78, 400 78, 470 120" fill="none" stroke="#ffb000" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arAmber)"/>
+  <text x="380" y="74" fill="#ffb000" font-size="12" text-anchor="middle">~10,800 km</text>
+  <line x1="165" y1="172" x2="300" y2="228" stroke="#5b6b7a" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="595" y1="172" x2="460" y2="228" stroke="#5b6b7a" stroke-width="1.5" marker-end="url(#ar)"/>
+  <rect x="205" y="230" width="350" height="72" rx="8" fill="#1a1012" stroke="#d9544e"/>
+  <text x="380" y="258" fill="#f0a8a4" font-size="14" font-weight="600" text-anchor="middle">IMPOSSIBLE_TRAVEL</text>
+  <text x="380" y="280" fill="#c98f8b" font-size="12" text-anchor="middle">6 min ⇒ ~108,000 km/h ⇒ block + HIGH alert</text>
+  <text x="40" y="338" fill="#8b98a5" font-size="12">Rule: distance &gt; 100 km and implied speed &gt; 900 km/h (faster than a commercial flight).</text>
+</svg>

@@ -1,0 +1,188 @@
+{
+  "info": {
+    "name": "auth-lab — Register & Login",
+    "_postman_id": "a17b0c10-0000-4000-8000-000000000001",
+    "description": "Full register + login test workflow for the auth-lab backend.\n\nRun the whole folder top-to-bottom (Collection Runner, or just send each request in order). A fresh, unique email is generated on the first request and reused throughout, so the run is repeatable.\n\nNote: POST /auth/login is throttled to 3 requests / 60s per IP. This collection makes 2 login calls per run; running it more than ~once per minute may hit HTTP 429.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "email", "value": "" },
+    { "key": "password", "value": "Passw0rd123" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "sessionId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Register (new user)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Generate a unique email so the workflow is repeatable.",
+              "const email = `qa+${Date.now()}@authlab.test`;",
+              "pm.collectionVariables.set('email', email);",
+              "if (!pm.collectionVariables.get('password')) {",
+              "  pm.collectionVariables.set('password', 'Passw0rd123');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 201 Created', () => pm.response.to.have.status(201));",
+              "const body = pm.response.json();",
+              "pm.test('returns a uuid id', () => {",
+              "  pm.expect(body.id).to.match(/^[0-9a-f-]{36}$/i);",
+              "});",
+              "pm.test('echoes the normalised email', () => {",
+              "  pm.expect(body.email).to.eql(pm.collectionVariables.get('email').toLowerCase());",
+              "});",
+              "pm.test('returns createdAt', () => pm.expect(body.createdAt).to.be.a('string'));",
+              "pm.test('never returns a password or hash', () => {",
+              "  pm.expect(body).to.not.have.property('password');",
+              "  pm.expect(body).to.not.have.property('passwordHash');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+        }
+      }
+    },
+    {
+      "name": "2. Register (duplicate is rejected)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 400 Bad Request', () => pm.response.to.have.status(400));",
+              "pm.test('message says the user already exists', () => {",
+              "  const m = pm.response.json().message;",
+              "  pm.expect(String(m)).to.match(/exist/i);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+        }
+      }
+    },
+    {
+      "name": "3. Register (validation: short password rejected)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 400 Bad Request', () => pm.response.to.have.status(400));",
+              "pm.test('validation message mentions the password length', () => {",
+              "  const m = JSON.stringify(pm.response.json().message || '');",
+              "  pm.expect(m).to.match(/8 characters|password/i);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"shortpw+{{$timestamp}}@authlab.test\",\n  \"password\": \"123\"\n}"
+        }
+      }
+    },
+    {
+      "name": "4. Login (valid credentials)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200 or 201', () => pm.expect([200, 201]).to.include(pm.response.code));",
+              "const body = pm.response.json();",
+              "pm.test('returns sessionId + token pair', () => {",
+              "  pm.expect(body.sessionId, 'sessionId').to.be.a('string');",
+              "  pm.expect(body.accessToken, 'accessToken').to.be.a('string');",
+              "  pm.expect(body.refreshToken, 'refreshToken').to.be.a('string');",
+              "});",
+              "pm.test('tokens are well-formed JWTs (3 segments)', () => {",
+              "  pm.expect(body.accessToken.split('.')).to.have.lengthOf(3);",
+              "  pm.expect(body.refreshToken.split('.')).to.have.lengthOf(3);",
+              "});",
+              "pm.test('does NOT leak internal jti fields', () => {",
+              "  pm.expect(body).to.not.have.property('accessJti');",
+              "  pm.expect(body).to.not.have.property('refreshJti');",
+              "});",
+              "// Chain for any follow-up requests.",
+              "pm.collectionVariables.set('accessToken', body.accessToken);",
+              "pm.collectionVariables.set('refreshToken', body.refreshToken);",
+              "pm.collectionVariables.set('sessionId', body.sessionId);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+        }
+      }
+    },
+    {
+      "name": "5. Login (wrong password is rejected)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 401 Unauthorized', () => pm.response.to.have.status(401));",
+              "pm.test('message is generic (no user enumeration)', () => {",
+              "  pm.expect(String(pm.response.json().message)).to.match(/invalid credentials/i);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"definitely-wrong-pw\"\n}"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+# pnpm 10 requires explicit approval for dependencies that run install scripts.
+# Only these need to build natively; everything else is skipped.
+onlyBuiltDependencies:
+  - '@nestjs/core'
+  - argon2
+  - unrs-resolver

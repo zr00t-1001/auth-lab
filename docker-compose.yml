@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "1234"
+      POSTGRES_DB: auth_sys
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: "1234"
+      DB_NAME: auth_sys
+      DB_SYNC: "true"
+      JWT_ACCESS_SECRET: super_access_secret_123
+      JWT_REFRESH_SECRET: super_refresh_secret_456
+      PORT: 3000
+      # Auto-create a ready-to-use admin + victim on first boot.
+      SEED_ON_BOOT: "true"
+      SEED_ADMIN_EMAIL: admin@test.com
+      SEED_ADMIN_PASSWORD: admin12345
+      SEED_VICTIM_EMAIL: test@test.com
+      SEED_VICTIM_PASSWORD: "12345678"
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  web:
+    build: ./web
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "4321:80"

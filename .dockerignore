@@ -1,0 +1,9 @@
+node_modules
+dist
+coverage
+.git
+.github
+web/node_modules
+web/dist
+reports
+**/*.log
