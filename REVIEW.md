@@ -45,8 +45,6 @@ add a remote-exec shell.**
 If you ever want "more interactive," extend the *menu* (e.g. choose a subset of
 scenarios, replay a saved report), not the *capability surface*.
 
-## What I added (1 feature + tests, kept tightly scoped)
-
 **Feature — a defense verdict layer.** Each scenario now declares the defensive
 behaviour it's meant to provoke (e.g. "a replayed refresh token must be
 rejected"). After a run, observed events are checked against those expectations
@@ -64,25 +62,6 @@ schema validity), and the new `expectations` evaluator. Run with `pnpm test`.
 
 Verified here in isolation: `tsc --noEmit` clean, all 22 tests pass.
 
-## Smaller issues worth fixing before you publish
 
-- `README.md` is the stock NestJS starter text — replaced with a real one.
-- `package.json` `"license": "zoel"` is not a valid SPDX id; pick e.g. `MIT`
-  or `UNLICENSED`.
-- **Duplicate type:** `SecurityContext` is declared in both
-  `session-security.context.ts` and `risk-level.types.ts`. Keep one.
-- **Dead/overlapping code:** `attack-simulator/modules/session-hijack.ts`
-  duplicates `scenarios/session-hijack.ts`; `reporters/soc.reporter.ts` and
-  `engine/attack-engine.ts` look like earlier drafts superseded by
-  `report-builder.ts`. Consider deleting to reduce confusion.
-- `getUserSessions(..., enforce)` accepts an `enforce` flag that isn't used in
-  the logic — wire it up or drop it.
-- `.env` is committed. Make sure it holds only throwaway lab values and is in
-  `.gitignore` for anything real.
 
-## I did not "rewrite" the backend
 
-You mentioned rewriting it. The backend is solid and sizeable, and rewriting it
-blind (without a running Postgres here) would add risk, not value. I instead
-reviewed it, completed the missing capability, and added the test suite. If
-there's a specific module you want reworked, point me at it.
