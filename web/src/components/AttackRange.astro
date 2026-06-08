@@ -1,0 +1,30 @@
+<section class="panel attack-panel" id="attackPanel">
+  <div class="panel-h">// LAUNCH ATTACK <span class="count" id="rangeState">[ARMED]</span></div>
+  <div class="attack-grid">
+    <div>
+      <label class="stack">SCENARIO
+        <select id="scenarioSelect">
+          <option value="session-hijack">Session hijack</option>
+          <option value="brute-force">Brute force</option>
+          <option value="token-reuse">Token replay</option>
+          <option value="refresh-race">Refresh race</option>
+          <option value="fingerprint-spoof">Fingerprint spoof</option>
+          <option value="jwt-tamper">JWT tampering</option>
+          <option value="all">Run all scenarios</option>
+        </select>
+      </label>
+      <label class="stack">ATTACKER ORIGIN
+        <select id="sourceIpSelect">
+          <option value="8.8.8.8">United States · 8.8.8.8</option>
+          <option value="133.11.0.1">Japan · 133.11.0.1</option>
+          <option value="80.67.169.12">France · 80.67.169.12</option>
+          <option value="139.130.4.4">Australia · 139.130.4.4</option>
+          <option value="77.88.8.8">Russia · 77.88.8.8</option>
+        </select>
+      </label>
+      <button class="key primary launch" id="launchAttack">LAUNCH ATTACK</button>
+      <div class="hint">Runs an isolated simulator session against this API; the event feed updates immediately. Launch from one origin, then another far away within a few minutes, to trip impossible-travel.</div>
+    </div>
+    <div class="range-log" id="rangeLog">attack range ready — pick a scenario and launch</div>
+  </div>
+</section>

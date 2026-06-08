@@ -1,3 +1,10 @@
+allowBuilds:
+  '@nestjs/core': true
+  '@scarf/scarf': true
+  argon2: true
+  esbuild: true
+  sharp: set this to true or false
+  unrs-resolver: true
 # pnpm 10 requires explicit approval for dependencies that run install scripts.
 # Only these need to build natively; everything else is skipped.
 onlyBuiltDependencies:

@@ -1,0 +1,14 @@
+<section class="panel login" id="login">
+  <div class="panel-h">// AUTHENTICATE</div>
+  <div class="login-body">
+    <label>EMAIL<input id="email" type="email" autocomplete="username" value="admin@test.com" /></label>
+    <label>PASSWD<input id="password" type="password" autocomplete="current-password" value="admin12345" /></label>
+    <label id="mfaRow" hidden>🔐 MFA CODE<input id="mfaCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6-digit code" /></label>
+    <div class="login-actions">
+      <button id="loginBtn" class="key primary">LOGIN&nbsp;⏎</button>
+      <button id="registerBtn" class="key">REGISTER</button>
+    </div>
+    <div class="msg" id="loginMsg"></div>
+    <div class="hint">ADMIN // admin@test.com&nbsp;:&nbsp;admin12345 — the simulator plays the victim (test@test.com)</div>
+  </div>
+</section>
