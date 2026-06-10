@@ -1,4 +1,4 @@
-import QRCode from 'qrcode';
+      import QRCode from 'qrcode';
       import { API, loadTokens as load, saveTokens as save, clearTokens as clear, apiFetch, authApi } from '../services/api';
       import { els, esc, setStatus, setConn } from './dom';
       import { riskClass, sevClass, fmtLoc } from './format';
@@ -19,7 +19,7 @@ import QRCode from 'qrcode';
 
       
 
-      els.target.textContent = 'SRV ' + API.replace(/^https?:\/\//, '');
+      els.target.textContent = 'SRV ' + (API ? API.replace(/^https?:\/\//, '') : location.host);
 
       // Thin wrapper over the services layer. apiFetch attaches the token and,
       // on 401, silently refreshes + retries before giving up — so an active

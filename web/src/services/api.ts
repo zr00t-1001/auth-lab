@@ -9,10 +9,14 @@
 
 export type Tokens = { sessionId?: string; accessToken: string; refreshToken: string };
 
+// API base URL. Empty string = same-origin: the default when served behind the
+// Caddy TLS proxy, which routes API paths to the backend on one HTTPS origin
+// (so the browser makes no cross-origin calls). To point the dashboard at a
+// separate API host, set PUBLIC_API_URL at build time.
 export const API = (
-  (typeof document !== 'undefined' && document.body?.dataset.api) ||
-  (import.meta as any).env?.PUBLIC_API_URL ||
-  'http://localhost:3000'
+  (typeof document !== 'undefined' ? document.body?.dataset.api : undefined) ??
+  (import.meta as any).env?.PUBLIC_API_URL ??
+  ''
 ).replace(/\/$/, '');
 
 // ---- token storage ----
@@ -100,11 +104,12 @@ export const authApi = {
 export const sessionsApi = {
   mine: (o?: () => void) => apiFetch('/sessions', {}, o),
   all: (o?: () => void) => apiFetch('/sessions/all', {}, o),
+  revoke: (id: string, o?: () => void) => apiFetch('/sessions/' + id, { method: 'DELETE' }, o),
 };
 
 export const eventsApi = {
-  mine: (o?: () => void) => apiFetch('/security/events', {}, o),
-  all: (o?: () => void) => apiFetch('/security/events/all', {}, o),
+  mine: (limit = 50, o?: () => void) => apiFetch('/security/events?limit=' + limit, {}, o),
+  all: (limit = 50, o?: () => void) => apiFetch('/security/events/all?limit=' + limit, {}, o),
 };
 
 export const attackRangeApi = {

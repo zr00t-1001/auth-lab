@@ -1,7 +1,7 @@
 ---
 // App shell: <head>, fonts, the global stylesheet, and the .crt terminal frame.
 import '../styles/global.css';
-const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3000';
+const apiUrl = import.meta.env.PUBLIC_API_URL ?? ''; // '' = same-origin (behind the Caddy proxy)
 ---
 <!doctype html>
 <html lang="en">

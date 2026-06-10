@@ -1,0 +1,28 @@
+# auth-lab edge proxy — single HTTPS origin in front of the whole stack.
+#
+# Local demo: the site name `localhost` makes Caddy mint a certificate from its
+# own internal CA (your browser will warn until you trust Caddy's root, which is
+# expected for a lab). For a real deployment, replace `localhost` with your
+# domain and delete the `tls internal` line — Caddy then auto-provisions a
+# Let's Encrypt certificate and renews it for you.
+
+localhost {
+	tls internal
+
+	encode zstd gzip
+
+	# API surface → NestJS backend. Everything the dashboard calls plus Swagger.
+	@api path /auth* /sessions* /security* /attack-range* /health* /api*
+	handle @api {
+		reverse_proxy api:3000
+	}
+
+	# Everything else → the Astro dashboard (static, served by nginx).
+	handle {
+		reverse_proxy web:80
+	}
+
+	# HSTS intentionally omitted here: with the `tls internal` cert it would pin
+	# localhost and make the (expected) browser warning non-bypassable. For a
+	# real domain, add: header Strict-Transport-Security "max-age=15552000; includeSubDomains"
+}

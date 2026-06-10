@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: "1234"
       POSTGRES_DB: auth_sys
     ports:
-      - "5433:5432"
+      - "5433:5432"   # dev convenience (psql from the host); not part of the edge
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 3s
@@ -34,8 +34,9 @@ services:
       SEED_ADMIN_PASSWORD: admin12345
       SEED_VICTIM_EMAIL: test@test.com
       SEED_VICTIM_PASSWORD: "12345678"
-    ports:
-      - "3000:3000"
+    # No host port: the API is reached only through the Caddy TLS proxy.
+    expose:
+      - "3000"
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
       interval: 5s
@@ -47,5 +48,23 @@ services:
     depends_on:
       api:
         condition: service_started
+    # No host port: the dashboard is served through Caddy too.
+    expose:
+      - "80"
+
+  caddy:
+    image: caddy:2-alpine
+    depends_on:
+      - web
+      - api
     ports:
-      - "4321:80"
+      - "80:80"     # redirects to https
+      - "443:443"   # the single HTTPS entry point — open https://localhost
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

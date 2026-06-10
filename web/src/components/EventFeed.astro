@@ -9,14 +9,4 @@
     </table>
   </div>
 </section>
-Step 3b (next): carve dashboard.ts into focused modules so the scaffolding is "perfect":
 
-    lib/dom.ts — element refs + setStatus/setConn/esc
-    lib/state.ts — shared state (account, isAdmin, mfaGated, seenEventIds, timers)
-    lib/format.ts — fmtLoc, riskClass, sevClass, time/device formatting
-    lib/auth.ts — login/register/logout, showLogin/showApp, loadMe, role decode
-    lib/mfa.ts — account-security panel (setup/enable/disable)
-    lib/sessions.ts / lib/events.ts — table + feed rendering
-    lib/attack.ts — attack-range launch
-    lib/poll.ts — refresh + polling lifecycle
-    lib/app.ts — wires listeners + boot (the entry the page imports)
