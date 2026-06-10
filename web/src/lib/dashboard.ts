@@ -1,5 +1,7 @@
 import QRCode from 'qrcode';
       import { API, loadTokens as load, saveTokens as save, clearTokens as clear, apiFetch, authApi } from '../services/api';
+      import { els, esc, setStatus, setConn } from './dom';
+      import { riskClass, sevClass, fmtLoc } from './format';
       type Tokens = { sessionId?: string; accessToken: string; refreshToken: string };
       type Risk = { level: string; score: number };
       type SessionRow = {
@@ -15,38 +17,7 @@ import QRCode from 'qrcode';
       type AlertLike = { id?: string; type: string; severity?: string; ip?: string };
       type Account = { id: string; email: string; role: string; mfaEnabled: boolean; createdAt?: string };
 
-      const $ = <T extends HTMLElement = HTMLElement>(s: string) => document.querySelector(s) as T;
-
-      const els = {
-        login: $('#login'), app: $('#app'),
-        email: $<HTMLInputElement>('#email'), password: $<HTMLInputElement>('#password'),
-        loginBtn: $<HTMLButtonElement>('#loginBtn'), loginMsg: $('#loginMsg'),
-        registerBtn: $<HTMLButtonElement>('#registerBtn'),
-        sessions: $('#sessions tbody'), events: $('#events tbody'),
-        sessCount: $('#sessCount'), evtCount: $('#evtCount'),
-        sessTitle: $('#sessTitle'), evtTitle: $('#evtTitle'),
-        attackPanel: $('#attackPanel'), evtPanel: $('#evtPanel'),
-        mfaPanel: $('#mfaPanel'), mfaState: $('#mfaState'), mfaBody: $('#mfaBody'),
-        sessPanel: $('#sessPanel'), mfaGate: $('#mfaGate'),
-        mfaRow: $('#mfaRow'), mfaCode: $<HTMLInputElement>('#mfaCode'),
-        sessHead: $('#sessHead'), evtHead: $('#evtHead'),
-        who: $('#who'), status: $('#status'),
-        target: $('#target'), conn: $('#conn'), clock: $('#clock'),
-        scenarioSelect: $<HTMLSelectElement>('#scenarioSelect'), sourceIpSelect: $<HTMLSelectElement>('#sourceIpSelect'), launchAttack: $<HTMLButtonElement>('#launchAttack'),
-        rangeState: $('#rangeState'), rangeLog: $('#rangeLog'),
-      };
-
-
-      const setStatus = (m: string, kind: 'ok' | 'err' | '' = '') => {
-        els.status.textContent = m;
-        els.status.className = kind;
-      };
-      const setConn = (up: boolean) => {
-        els.conn.textContent = up ? '● LINK UP' : '● LINK DOWN';
-        els.conn.className = up ? 'conn on' : 'conn off';
-      };
-      const esc = (s: unknown) =>
-        String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+      
 
       els.target.textContent = 'SRV ' + API.replace(/^https?:\/\//, '');
 
@@ -140,10 +111,7 @@ import QRCode from 'qrcode';
       }
 
       // ── DATA ─────────────────────────────────────────────────
-      const riskClass = (lvl?: string) =>
-        ({ TRUSTED: 'lv-ok', LOW_RISK: 'lv-low', SUSPICIOUS: 'lv-warn', HIGH_RISK: 'lv-crit' } as Record<string, string>)[lvl ?? ''] || '';
-      const sevClass = (s?: string) =>
-        ({ LOW: 'lv-low', MEDIUM: 'lv-warn', HIGH: 'lv-crit' } as Record<string, string>)[s ?? ''] || '';
+      
 
       // ── ADMIN / SOC MODE ─────────────────────────────────────
       // Admins observe the WHOLE system (all users' sessions + events) as a
@@ -174,8 +142,7 @@ import QRCode from 'qrcode';
         }
       }
 
-      const fmtLoc = (country?: string, city?: string): string =>
-        city && country ? city + ', ' + country : country || '—';
+      
 
       async function loadSessions() {
         if (mfaGated) return;
