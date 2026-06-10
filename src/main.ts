@@ -11,14 +11,34 @@ async function bootstrap() {
   // browser AND the simulator) shares one ::1 rate-limit bucket, so the
   // simulator's victim login gets throttled and no geo session is created.
   // Lab-permissive (trusts any proxy); scope this before a real deployment.
-  app.getHttpAdapter().getInstance().set('trust proxy', true);
+  const http = app.getHttpAdapter().getInstance();
+  http.set('trust proxy', true);
+  http.disable('x-powered-by'); // don't advertise the framework
 
-  // Allow the Astro dev frontend (and other local origins) to call the API.
-  // Lab-permissive; tighten the origin list before any real deployment.
-  app.enableCors({
-    origin: true,
-    credentials: true,
+  // Security headers. Set explicitly (no extra dependency) rather than pulling
+  // in helmet. HSTS only takes effect once traffic is HTTPS (browsers ignore
+  // it over plain HTTP), so it's safe to send now and active behind the TLS
+  // proxy. No CSP here on purpose: this is a JSON API and a strict CSP would
+  // break the Swagger UI at /api — CSP belongs on the frontend (nginx) instead.
+  app.use((_req: any, res: any, next: any) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+    next();
   });
+
+  // CORS: allow only known origins instead of reflecting any. Override in
+  // deployment with CORS_ORIGINS="https://app.example.com,https://..." .
+  // Defaults cover the local Astro frontend + the API host itself.
+  const origins = (
+    process.env.CORS_ORIGINS ??
+    'http://localhost:4321,http://127.0.0.1:4321,http://localhost:5173,http://localhost:3000'
+  )
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  app.enableCors({ origin: origins, credentials: true });
 
   // Without this, the class-validator decorators on the DTOs are inert.
   app.useGlobalPipes(
