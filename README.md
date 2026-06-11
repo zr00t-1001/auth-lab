@@ -121,6 +121,7 @@ PUBLIC_API_URL=http://localhost:3000 npm run dev   # http://localhost:4321
 | **Security headers** | `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, and `X-Powered-By` removed. |
 | **HSTS** | Sent only when `ENABLE_HSTS=true`. It's **off by default** because pinning HSTS against the local self-signed cert would make the browser's certificate warning non-bypassable and lock you out. |
 | **CORS** | Locked to an allowlist (`CORS_ORIGINS`, comma-separated) instead of reflecting any origin. |
+| **Secrets** | Optional [Vault layer](#secrets-management-hashicorp-vault): JWT keys + short-lived DB credentials issued at boot instead of living in the compose file. |
 
 **Going to a real domain** is a small switch:
 
@@ -130,6 +131,49 @@ PUBLIC_API_URL=http://localhost:3000 npm run dev   # http://localhost:4321
 2. Add the HSTS header back to the Caddy site block.
 3. Set `ENABLE_HSTS=true` and `CORS_ORIGINS=https://your-domain` on the `api`
    service.
+
+## Secrets management (HashiCorp Vault)
+
+An **opt-in** layer that puts secrets behind Vault instead of the compose file.
+It's off by default — your normal `docker compose up` is untouched — and enabled
+with an overlay (no host install of Vault needed; it runs as a container):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.vault.yml up --build
+```
+
+**Phase 1 — static secrets.** At boot the API authenticates to Vault with
+**AppRole** (a least-privilege, read-only identity) and pulls the JWT signing
+keys from a KV v2 store, injecting them into the environment before Nest starts.
+The keys are generated *inside* Vault and never appear in the repo.
+
+**Phase 2 — dynamic database credentials.** With `USE_VAULT_DB=true` the API
+requests a **short-lived PostgreSQL user** from Vault's database secrets engine
+at boot, instead of using a static password, and a background renewer keeps the
+lease alive for the life of the process. Because the lab keeps no DB volume,
+each `up` gets a fresh dynamic user that creates and owns its own tables — so
+there's no cross-user ownership problem to manage.
+
+```mermaid
+flowchart LR
+  API[NestJS API] -->|AppRole login| V[Vault]
+  V -->|JWT keys from KV| API
+  V -->|"issues short-lived user"| API
+  V -->|manages roles| PG[(PostgreSQL)]
+  API -->|connects with the dynamic user| PG
+```
+
+Inspect what Vault issued:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.vault.yml \
+  exec vault vault read database/creds/auth-lab
+```
+
+Left for a real deployment: when a credential reaches its `max_ttl`, a
+production app fetches a new one and recreates its DB pool. That
+rotation-with-reconnect step needs a live environment to get right and is out of
+scope here — the renewer covers the in-lifetime case.
 
 ## Backend
 
@@ -190,6 +234,8 @@ pnpm test:e2e     # end-to-end
 ```
 Caddyfile             # TLS edge: terminates HTTPS, routes API vs dashboard
 docker-compose.yml    # db + api + web + caddy
+docker-compose.vault.yml  # opt-in Vault overlay (secrets + dynamic DB creds)
+vault/init.sh         # Vault bootstrap (AppRole, KV, DB secrets engine)
 src/
   modules/            # auth, users, sessions, security (audit), seed, attack-range
   attack-simulator/
@@ -205,6 +251,7 @@ web/                  # Astro SOC dashboard
     components/        # 9 panels: TopBar, LoginPanel, SessionsTable, EventFeed, …
     services/api.ts   # all network calls: base URL, token storage, auto-refresh
     lib/              # dom.ts, format.ts, dashboard.ts (UI behaviour)
+# (backend) src/vault/  # boot-time Vault loader (AppRole, KV, dynamic DB creds)
     styles/global.css # Tailwind v4 + terminal theme
 docs/                 # DIAGRAMS.md + SCHEMAS.md + diagrams/
 ```

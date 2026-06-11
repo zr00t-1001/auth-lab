@@ -1,10 +1,10 @@
-# Opt-in HashiCorp Vault layer (Phase 1: static secrets via AppRole).
-#
+# Opt-in HashiCorp Vault layer.
 #   docker compose -f docker-compose.yml -f docker-compose.vault.yml up --build
 #
-# Your normal `docker compose up` is UNCHANGED and does not use Vault. With this
-# overlay, the api fetches JWT signing keys + the DB password from Vault at boot
-# (USE_VAULT=true) and ignores the plaintext secrets in the base compose file.
+# Phase 1: JWT signing keys come from Vault's KV store (USE_VAULT).
+# Phase 2: the DB password/user are SHORT-LIVED credentials issued per boot by
+#          Vault's database secrets engine, with the lease auto-renewed
+#          (USE_VAULT_DB). Your plain `docker compose up` is unchanged.
 services:
   vault:
     image: hashicorp/vault:1.18
@@ -25,10 +25,12 @@ services:
     depends_on:
       vault:
         condition: service_healthy
+      db:
+        condition: service_healthy   # the DB engine config connects to Postgres
     environment:
       VAULT_ADDR: http://vault:8200
       VAULT_TOKEN: root-dev-token
-      DB_PASS: "1234"            # must match the db service's POSTGRES_PASSWORD
+      DB_PASS: "1234"                # the Postgres superuser pw Vault manages with
     entrypoint: ["sh", "/init.sh"]
     volumes:
       - ./vault/init.sh:/init.sh:ro
@@ -43,10 +45,12 @@ services:
         condition: service_completed_successfully
     environment:
       USE_VAULT: "true"
+      USE_VAULT_DB: "true"
       VAULT_ADDR: http://vault:8200
       VAULT_ROLE_ID_FILE: /vault/creds/role_id
       VAULT_SECRET_ID_FILE: /vault/creds/secret_id
       VAULT_SECRET_PATH: secret/data/auth-lab
+      VAULT_DB_ROLE: auth-lab
     volumes:
       - vault-creds:/vault/creds:ro
 
