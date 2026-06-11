@@ -150,9 +150,11 @@ The keys are generated *inside* Vault and never appear in the repo.
 **Phase 2 — dynamic database credentials.** With `USE_VAULT_DB=true` the API
 requests a **short-lived PostgreSQL user** from Vault's database secrets engine
 at boot, instead of using a static password, and a background renewer keeps the
-lease alive for the life of the process. Because the lab keeps no DB volume,
-each `up` gets a fresh dynamic user that creates and owns its own tables — so
-there's no cross-user ownership problem to manage.
+lease alive for the life of the process. Each boot mints a **new** DB user, so
+Vault runs must start from a clean database — bring the stack down with
+`down --volumes` between runs so the fresh user creates and owns the schema
+cleanly (otherwise its `synchronize` collides with tables left by a previous
+run's user — the `relation "users" already exists` error).
 
 ```mermaid
 flowchart LR
@@ -238,6 +240,7 @@ docker-compose.vault.yml  # opt-in Vault overlay (secrets + dynamic DB creds)
 vault/init.sh         # Vault bootstrap (AppRole, KV, DB secrets engine)
 src/
   modules/            # auth, users, sessions, security (audit), seed, attack-range
+  vault/              # boot-time Vault loader (AppRole, KV, dynamic DB creds)
   attack-simulator/
     schemas.ts        # Zod schemas — single source of truth for sim types
     registry.ts       # scenarios + their defensive expectations
@@ -251,7 +254,6 @@ web/                  # Astro SOC dashboard
     components/        # 9 panels: TopBar, LoginPanel, SessionsTable, EventFeed, …
     services/api.ts   # all network calls: base URL, token storage, auto-refresh
     lib/              # dom.ts, format.ts, dashboard.ts (UI behaviour)
-# (backend) src/vault/  # boot-time Vault loader (AppRole, KV, dynamic DB creds)
     styles/global.css # Tailwind v4 + terminal theme
 docs/                 # DIAGRAMS.md + SCHEMAS.md + diagrams/
 ```
