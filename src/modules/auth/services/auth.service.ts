@@ -327,7 +327,7 @@ export class AuthService {
   private extractMeta(req: any) {
     const headerIp = this.firstHeaderIp(req.headers?.['x-forwarded-for']);
     const socketIp = req.socket?.remoteAddress || req.ip || 'unknown';
-    const rawIp = headerIp || socketIp;
+    const rawIp  = headerIp || socketIp;
 
     return {
       ip: this.resolveGeoIp(rawIp),

@@ -1,9 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { AppModule } from './app.module';
+import { loadVaultSecrets } from './vault/vault-secrets';
 
 async function bootstrap() {
+  // When USE_VAULT=true, pull secrets from Vault and inject them into the
+  // environment BEFORE anything reads it. The Nest module graph evaluates DB and
+  // JWT config from env at import time, so AppModule is imported dynamically
+  // AFTER this call — otherwise the secrets would arrive too late.
+  await loadVaultSecrets();
+  const { AppModule } = await import('./app.module.js');
+
   const app = await NestFactory.create(AppModule);
 
   // Trust X-Forwarded-For so the rate limiter and req.ip use the real client
@@ -24,7 +31,13 @@ async function bootstrap() {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+    // HSTS is OFF by default. With a local self-signed / Caddy-internal cert,
+    // an HSTS pin makes the browser's certificate warning NON-bypassable and
+    // locks you out of the site. Enable it (ENABLE_HSTS=true) only when you are
+    // serving a trusted certificate (e.g. a real domain via Let's Encrypt).
+    if (process.env.ENABLE_HSTS === 'true') {
+      res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+    }
     next();
   });
 
